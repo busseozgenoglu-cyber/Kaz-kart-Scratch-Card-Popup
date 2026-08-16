@@ -1,0 +1,7 @@
+{
+  "scratchcart": {
+    "name": "ScratchCart",
+    "enabled": "Show the scratch ticket",
+    "subpath": "App proxy subpath"
+  }
+}

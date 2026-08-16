@@ -1,0 +1,47 @@
+{%- comment -%}
+  ScratchCart — App Embed bloğu.
+  Satıcı, tema düzenleyicideki "Uygulama yerleşimleri" bölümünden açar.
+  Betik yalnızca sepette ürün varken ve ödeme sayfası dışında yüklenir.
+{%- endcomment -%}
+
+{%- if block.settings.enabled
+  and cart.item_count > 0
+  and request.page_type != 'password'
+-%}
+  <link
+    rel="stylesheet"
+    href="{{ 'scratchcart.css' | asset_url }}"
+    media="print"
+    onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="{{ 'scratchcart.css' | asset_url }}">
+  </noscript>
+
+  <script
+    src="{{ 'scratchcart.js' | asset_url }}"
+    data-proxy="/apps/{{ block.settings.proxy_subpath | default: 'scratchcart' }}"
+    defer></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "ScratchCart",
+  "target": "body",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Kazı kazan biletini göster",
+      "default": true,
+      "info": "Bilet tasarımı, ödül oranları ve tetikleyiciler ScratchCart uygulamasının panelinden yönetilir."
+    },
+    {
+      "type": "text",
+      "id": "proxy_subpath",
+      "label": "Uygulama proxy alt yolu",
+      "default": "scratchcart",
+      "info": "Yalnızca Partner panelinde alt yolu değiştirdiyseniz düzenleyin."
+    }
+  ]
+}
+{% endschema %}

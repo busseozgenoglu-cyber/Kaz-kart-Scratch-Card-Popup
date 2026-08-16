@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+
+  @@index([shop])
+}
+
+model Shop {
+  id         String   @id @default(cuid())
+  shopDomain String   @unique
+  plan       String   @default("free")
+  isActive   Boolean  @default(true)
+  currency   String   @default("TRY")
+  installedAt DateTime @default(now())
+  uninstalledAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  settings      ShopSettings?
+  quota         UsageQuota?
+  scratches     Scratch[]
+  analytics     Analytics[]
+  discountCodes DiscountCode[]
+}
+
+model ShopSettings {
+  id     String @id @default(cuid())
+  shopId String @unique
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  enabled Boolean @default(true)
+
+  // Tetikleme
+  triggerType           String @default("both") // exit_intent | inactivity | both
+  inactivitySeconds     Int    @default(90)
+  maxDisplaysPerSession Int    @default(1)
+  cooldownMinutes       Int    @default(60)
+
+  // Kart tasarımı
+  title           String @default("SİZE ÖZEL BİR HEDİYE")
+  subtitle        String @default("Kaplamayı kazıyın, hediyeniz sepete işlensin.")
+  scratchText     String @default("KAZI")
+  backgroundColor String @default("#0B0A12")
+  cardColor       String @default("#D8BE8D")
+  revealColor     String @default("#E8C88A")
+  textColor       String @default("#141126")
+  fontFamily      String @default("system")
+
+  // Ödül olasılıkları (toplamı 100 olmalı)
+  tierFreeShippingProb Int @default(50)
+  tier10PercentProb    Int @default(30)
+  tier15PercentProb    Int @default(15)
+  tier20PercentProb    Int @default(5)
+
+  // Ödül değerleri
+  freeShippingThreshold Decimal? @default(150.00) @db.Decimal(10, 2)
+  minCartValue          Decimal? @default(50.00) @db.Decimal(10, 2)
+  discountValidMinutes  Int      @default(30)
+
+  // Davranış
+  autoApply     Boolean @default(true)
+  showConfetti  Boolean @default(true)
+  enableHaptic  Boolean @default(true)
+  mobileFullScreen Boolean @default(true)
+
+  language String @default("tr") // tr | en | es
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Scratch {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  sessionId  String
+  customerId String?
+  cartToken  String?
+
+  displayedAt DateTime  @default(now())
+  scratchedAt DateTime?
+  completedAt DateTime?
+  abandonedAt DateTime?
+
+  tierWon       String?
+  discountCode  String?
+  discountValue Decimal? @db.Decimal(10, 2)
+
+  cartValueBefore Decimal? @db.Decimal(10, 2)
+  cartValueAfter  Decimal? @db.Decimal(10, 2)
+  currency        String   @default("TRY")
+
+  convertedToOrder Boolean   @default(false)
+  orderId          String?
+  orderValue       Decimal?  @db.Decimal(10, 2)
+  recoveredAt      DateTime?
+
+  deviceType String?
+  country    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([shopId, discountCode])
+  @@index([sessionId])
+}
+
+model DiscountCode {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  code              String  @unique
+  shopifyDiscountId String?
+  shopifyGid        String?
+  tier              String
+  value             Decimal? @db.Decimal(10, 2)
+
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  scratchId String?
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  @@index([shopId, expiresAt])
+  @@index([shopId, isUsed])
+}
+
+model Analytics {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  displays     Int @default(0)
+  scratches    Int @default(0)
+  completions  Int @default(0)
+  conversions  Int @default(0)
+  abandonments Int @default(0)
+
+  cartValueTotal Decimal? @default(0) @db.Decimal(12, 2)
+  discountTotal  Decimal? @default(0) @db.Decimal(12, 2)
+  revenueTotal   Decimal? @default(0) @db.Decimal(12, 2)
+
+  freeShippingCount Int @default(0)
+  percent10Count    Int @default(0)
+  percent15Count    Int @default(0)
+  percent20Count    Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([shopId, date])
+  @@index([shopId, date])
+}
+
+model UsageQuota {
+  id     String @id @default(cuid())
+  shopId String @unique
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  plan           String    @default("free")
+  scratchesUsed  Int       @default(0)
+  scratchesLimit Int       @default(50)
+  periodStart    DateTime  @default(now())
+  periodEnd      DateTime?
+
+  updatedAt DateTime @updatedAt
+}

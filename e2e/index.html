@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScratchCart — uçtan uca test sahnesi</title>
+<link rel="stylesheet" href="/scratchcart.css">
+<style>
+  body { margin:0; font-family: system-ui, sans-serif; background:#fbfaf8; height:200vh; }
+  .bar { height:60px; background:#fff; border-bottom:1px solid #eee;
+         display:flex; align-items:center; padding:0 24px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="bar">Test Mağazası</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   Sahte Shopify + ScratchCart proxy'si.
+   Gerçek scratchcart.js DEĞİŞTİRİLMEDEN çalışır; yalnızca ağ katmanı taklit
+   edilir. Böylece test ettiğimiz şey gerçek widget mantığıdır.
+--------------------------------------------------------------------------- */
+window.__calls = { config: 0, start: 0, win: 0, abandon: 0, discount: 0, cartUpdate: 0 };
+window.__winBodies = [];
+
+// Sunucu davranışını taklit eder: aynı oturum ikinci kez kod ALMAZ,
+// ilk verilen kod tekrar döner (çift üretim koruması).
+window.__serverState = {
+  // Gerçek sunucuda kod veritabanındadır; burada yenilemeyi atlatsın diye
+  // sessionStorage'da tutulur.
+  get issued() {
+    try { return JSON.parse(sessionStorage.getItem("__sc_issued") || "null"); }
+    catch (e) { return null; }
+  },
+  set issued(v) { sessionStorage.setItem("__sc_issued", JSON.stringify(v)); },
+};
+const _q = new URLSearchParams(location.search);
+window.__scenario = {
+  winFails: _q.get("fail") === "1",
+  // Sayfa yenilense de geçerli kalması için sepet tutarı URL'den okunur.
+  cartTotal: Number(_q.get("cart") ?? 24000), // kuruş
+};
+
+/* Gerçek /proxy/config yanıtıyla BİREBİR aynı şekil.
+   Alan adları sözleşmedir: `trigger` (triggerType değil), `translations` vb. */
+const CONFIG = {
+  enabled: true,
+  trigger: "both",
+  inactivitySeconds: 2,
+  maxDisplaysPerSession: 1,
+  cooldownMinutes: 0,
+  title: "SİZE ÖZEL HEDİYE",
+  subtitle: "Bileti kazıyın, hediyeniz sepete işlensin.",
+  scratchText: "KAZI",
+  fontFamily: "system",
+  colors: { background: "#0B0A12", card: "#D8BE8D", reveal: "#E8C88A", text: "#141126" },
+  tiers: [
+    { type: "free_shipping", label: "KARGO BEDAVA" },
+    { type: "10_percent", label: "%10 İNDİRİM" },
+    { type: "15_percent", label: "%15 İNDİRİM" },
+    { type: "20_percent", label: "%20 İNDİRİM" },
+  ],
+  minCartValue: 50,
+  autoApply: true,
+  showConfetti: true,
+  enableHaptic: true,
+  mobileFullScreen: true,
+  language: "tr",
+  translations: {
+    eyebrow: "Tek kullanımlık bilet",
+    prizeNote: "Sepetinize işlenecek",
+    canvasLabel: "Kazıma alanı. Ödülü açmak için sürükleyin veya Enter tuşuna basın.",
+    scratchToReveal: "Kazımak için kaplamayı sürükleyin",
+    keepScratching: "Devam edin…",
+    checking: "Ödülünüz hazırlanıyor",
+    applying: "Sepete işleniyor",
+    applied: "Sepete işlendi",
+    goToCart: "Sepete git",
+    continueShopping: "Alışverişe devam et",
+    noThanks: "Şimdi değil, teşekkürler",
+    close: "Kapat",
+    copy: "Kopyala",
+    copied: "Kopyalandı",
+    expiresIn: "Kod {minutes} dakika geçerli",
+    terms: "Tek kullanımlık. Diğer kampanyalarla birleşmeyebilir.",
+    errors: {
+      quota_exceeded: "Bu kampanya şimdilik dolu. Kısa süre sonra tekrar deneyin.",
+      already_played: "Bu bileti daha önce kazıdınız. Kodunuz sepetinizde geçerli.",
+      cart_too_small: "Sepet tutarı bu kampanyanın alt sınırının altında.",
+      rate_limited: "Çok fazla deneme yapıldı. Bir dakika sonra tekrar deneyin.",
+      discount_failed: "İndirim oluşturulamadı. Sepetiniz olduğu gibi duruyor.",
+      unknown: "Bir şeyler ters gitti. Sepetinizde bir değişiklik yapılmadı.",
+    },
+  },
+};
+
+function jsonResponse(data, ok = true) {
+  return Promise.resolve(new Response(JSON.stringify(data), {
+    status: ok ? 200 : 400,
+    headers: { "Content-Type": "application/json" },
+  }));
+}
+
+const realFetch = window.fetch;
+window.fetch = function (url, options) {
+  const href = String(url);
+
+  if (href.includes("/apps/scratchcart/config")) {
+    window.__calls.config++;
+    return jsonResponse(CONFIG);
+  }
+  if (href.includes("/apps/scratchcart/start")) {
+    window.__calls.start++;
+    return jsonResponse({ ok: true });
+  }
+  if (href.includes("/apps/scratchcart/abandon")) {
+    window.__calls.abandon++;
+    return jsonResponse({ ok: true });
+  }
+  if (href.includes("/apps/scratchcart/win")) {
+    window.__calls.win++;
+    window.__winBodies.push(JSON.parse(options.body));
+    if (window.__scenario.winFails) {
+      return jsonResponse({ ok: false, error: "quota_exceeded" }, false);
+    }
+    // Oturum başına tek kod
+    if (!window.__serverState.issued) {
+      window.__serverState.issued = {
+        ok: true, tier: "20_percent", label: "%20 İNDİRİM",
+        code: "SC20-K7ARJ4", validMinutes: 30,
+      };
+    }
+    return jsonResponse(window.__serverState.issued);
+  }
+  // DİKKAT: indirim URL'i "/discount/<kod>?redirect=/cart.js" biçimindedir ve
+  // "/cart.js" içerir; bu yüzden /discount/ kontrolü ÖNCE gelmelidir.
+  if (href.includes("/discount/")) {
+    window.__calls.discount++;
+    return jsonResponse({ ok: true });
+  }
+  if (href.includes("/cart.js")) {
+    return jsonResponse({ total_price: window.__scenario.cartTotal, item_count: 2 });
+  }
+  if (href.includes("/cart/update.js")) {
+    window.__calls.cartUpdate++;
+    return jsonResponse({ ok: true });
+  }
+  return realFetch(url, options);
+};
+</script>
+
+<script src="/scratchcart.js" data-proxy="/apps/scratchcart"></script>
+</body>
+</html>

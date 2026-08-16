@@ -1,0 +1,7 @@
+{
+  "scratchcart": {
+    "name": "ScratchCart",
+    "enabled": "Kazı kazan biletini göster",
+    "subpath": "Uygulama proxy alt yolu"
+  }
+}

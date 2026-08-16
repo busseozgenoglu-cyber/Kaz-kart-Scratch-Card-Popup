@@ -1,0 +1,63 @@
+# ScratchCart — Shopify App yapılandırması
+# `shopify app config link` çalıştırdıktan sonra client_id otomatik dolar.
+
+client_id = "BURAYA_PARTNER_DASHBOARD_CLIENT_ID"
+name = "ScratchCart"
+handle = "scratchcart"
+application_url = "https://scratchcart.up.railway.app"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+# read_orders => kurtarılan siparişi eşleştirmek için (Protected customer data onayı gerekir)
+# write_discounts/read_discounts => indirim kodu üretimi ve temizliği
+# read_products => gelecekteki koleksiyon bazlı kurallar
+scopes = "read_products,read_orders,write_discounts,read_discounts"
+
+[auth]
+redirect_urls = [
+  "https://scratchcart.up.railway.app/auth/callback",
+  "https://scratchcart.up.railway.app/auth/shopify/callback",
+  "https://scratchcart.up.railway.app/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
+
+  # --- Shopify tarafından ZORUNLU tutulan GDPR webhook'ları ---
+  [[webhooks.subscriptions]]
+  topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
+
+[app_proxy]
+# Mağaza tarafındaki widget bu adres üzerinden konuşur:
+# https://magaza.myshopify.com/apps/scratchcart/config  ->  /proxy/config
+url = "https://scratchcart.up.railway.app/proxy"
+subpath = "scratchcart"
+prefix = "apps"
+
+[pos]
+embedded = false
