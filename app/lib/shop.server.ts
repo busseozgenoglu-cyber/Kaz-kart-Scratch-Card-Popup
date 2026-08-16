@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { Shop, ShopSettings } from "@prisma/client";
 import prisma from "~/db.server";
 import { addMonths, planLimit } from "./scratch-engine.server";
@@ -7,6 +8,12 @@ export type ShopWithSettings = Shop & { settings: ShopSettings };
 /**
  * Mağazayı ilk görüşte kurar. Kurulum, ayarlar ve kota tek transaction'da
  * oluşturulur; yarım kalmış kayıt bırakmaz.
+ *
+ * app.tsx ve alt route'ların loader'ları Remix tarafından paralel çalıştırılır,
+ * bu yüzden ilk ziyarette iki istek aynı anda buraya girebilir. İkisi de
+ * shopId üzerinde upsert dener; kaybeden P2002 (unique constraint) alır.
+ * Bu durumda baştan tekrar denenir — kazanan taraf artık kaydı oluşturmuş
+ * olacağından üstteki "existing" kontrolü bu sefer erken döner.
  */
 export async function ensureShop(shopDomain: string): Promise<ShopWithSettings> {
   const existing = await prisma.shop.findUnique({
@@ -26,31 +33,38 @@ export async function ensureShop(shopDomain: string): Promise<ShopWithSettings> 
     return existing as ShopWithSettings;
   }
 
-  const shop = await prisma.shop.upsert({
-    where: { shopDomain },
-    update: { isActive: true, uninstalledAt: null },
-    create: { shopDomain },
-  });
+  try {
+    const shop = await prisma.shop.upsert({
+      where: { shopDomain },
+      update: { isActive: true, uninstalledAt: null },
+      create: { shopDomain },
+    });
 
-  const settings = await prisma.shopSettings.upsert({
-    where: { shopId: shop.id },
-    update: {},
-    create: { shopId: shop.id },
-  });
+    const settings = await prisma.shopSettings.upsert({
+      where: { shopId: shop.id },
+      update: {},
+      create: { shopId: shop.id },
+    });
 
-  await prisma.usageQuota.upsert({
-    where: { shopId: shop.id },
-    update: {},
-    create: {
-      shopId: shop.id,
-      plan: shop.plan,
-      scratchesLimit: planLimit(shop.plan),
-      periodStart: new Date(),
-      periodEnd: addMonths(new Date(), 1),
-    },
-  });
+    await prisma.usageQuota.upsert({
+      where: { shopId: shop.id },
+      update: {},
+      create: {
+        shopId: shop.id,
+        plan: shop.plan,
+        scratchesLimit: planLimit(shop.plan),
+        periodStart: new Date(),
+        periodEnd: addMonths(new Date(), 1),
+      },
+    });
 
-  return { ...shop, settings };
+    return { ...shop, settings };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return ensureShop(shopDomain);
+    }
+    throw error;
+  }
 }
 
 export async function getShopByDomain(shopDomain: string) {
