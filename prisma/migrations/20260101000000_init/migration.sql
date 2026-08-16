@@ -1,5 +1,7 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- NOT: `CREATE SCHEMA IF NOT EXISTS "public"` satırı kaldırıldı.
+-- public şeması her PostgreSQL veritabanında zaten vardır ve bazı barındırma
+-- sağlayıcılarında (Railway dahil) veritabanı kullanıcısının şema oluşturma
+-- yetkisi olmayabilir; bu satır gereksiz bir hata noktasıdır.
 
 -- CreateTable
 CREATE TABLE "Session" (
