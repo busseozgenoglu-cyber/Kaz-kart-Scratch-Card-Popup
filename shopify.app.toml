@@ -1,10 +1,10 @@
 # ScratchCart — Shopify App yapılandırması
 # `shopify app config link` çalıştırdıktan sonra client_id otomatik dolar.
 
-client_id = "BURAYA_PARTNER_DASHBOARD_CLIENT_ID"
-name = "ScratchCart"
-handle = "scratchcart"
-application_url = "https://scratchcart.up.railway.app"
+client_id = "3e699581d10b41a3ae8db72cda4efb73"
+name = "Kaz-kart-Scratch-Card-Popup"
+handle = "kaz-kart-scratch-card-popup"
+application_url = "https://kaz-kart-scratch-card-popup-production.up.railway.app"
 embedded = true
 
 [build]
@@ -19,9 +19,9 @@ scopes = "read_products,read_orders,write_discounts,read_discounts"
 
 [auth]
 redirect_urls = [
-  "https://scratchcart.up.railway.app/auth/callback",
-  "https://scratchcart.up.railway.app/auth/shopify/callback",
-  "https://scratchcart.up.railway.app/api/auth/callback"
+  "https://kaz-kart-scratch-card-popup-production.up.railway.app/auth/callback",
+  "https://kaz-kart-scratch-card-popup-production.up.railway.app/auth/shopify/callback",
+  "https://kaz-kart-scratch-card-popup-production.up.railway.app/api/auth/callback"
 ]
 
 [webhooks]
@@ -55,7 +55,7 @@ api_version = "2025-01"
 [app_proxy]
 # Mağaza tarafındaki widget bu adres üzerinden konuşur:
 # https://magaza.myshopify.com/apps/scratchcart/config  ->  /proxy/config
-url = "https://scratchcart.up.railway.app/proxy"
+url = "https://kaz-kart-scratch-card-popup-production.up.railway.app/proxy"
 subpath = "scratchcart"
 prefix = "apps"
 

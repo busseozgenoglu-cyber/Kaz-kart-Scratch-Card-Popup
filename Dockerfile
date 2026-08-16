@@ -22,7 +22,12 @@ RUN npx prisma generate && npm run build
 RUN npm prune --omit=dev && npm cache clean --force
 
 ENV NODE_ENV=production
-ENV PORT=3000
+
+# PORT KASITLI OLARAK SABİTLENMEZ.
+# Railway gibi platformlar konteynere kendi PORT değişkenini geçirir ve
+# genel alan adını o porta yönlendirir. Burada PORT=3000 sabitlenirse
+# platform 8080'e yönlendirdiğinde hiçbir şey dinlemez ve 502 alınır.
+# remix-serve, PORT tanımlı değilse 3000'e düşer.
 
 # start = prisma migrate deploy && remix-serve
 CMD ["npm", "run", "start"]

@@ -50,6 +50,22 @@ NODE_ENV=production
 
 `DATABASE_URL` ve `PORT` Railway tarafından sağlanır — elle eklemeyin.
 
+### Port ayarı (502 hatasının en sık sebebi)
+
+Railway, oluşturduğu genel alan adını bir **hedef porta** yönlendirir. Bu port
+uygulamanın dinlediği portla aynı değilse istek boşa gider ve
+`502 Application failed to respond` alınır.
+
+Railway → servis → **Settings → Networking → Public Networking**. Alan adının
+altındaki port değerine bakın:
+
+- Uygulama, `PORT` değişkeni tanımlıysa o portu dinler; tanımlı değilse 3000.
+- Railway `PORT` sağlıyorsa alan adının hedef portu da aynı olmalıdır.
+- Uyuşmuyorsa kalem simgesine tıklayıp portu düzeltin (örneğin 8080 → 3000).
+
+`Dockerfile` içinde `PORT` bilerek sabitlenmemiştir; sabitlenirse platformun
+kendi değeriyle çakışır.
+
 ### Build yapılandırması
 
 `railway.json` zaten Dockerfile kullanacak şekilde ayarlıdır:
@@ -154,6 +170,8 @@ Aşağıdakilerin hepsini test mağazasında doğrulayın:
 | Kod üretilmiyor, "unknown" hatası | `write_discounts` kapsamı eksik → `SCOPES` düzeltip **uygulamayı yeniden kurun** |
 | `migrate deploy` hatası | `prisma/migrations/` klasörü depoda yok |
 | Build'de `vite: not found` | Dockerfile'da `--omit=dev` ile kurulum yapılmış |
+| **502 — Application failed to respond** | Alan adının hedef portu uygulamanın dinlediği portla uyuşmuyor |
+| `Environment variable not found: DATABASE_URL` | Postgres eklenmemiş veya uygulama servisine referansla bağlanmamış |
 
 > **Kapsam (scope) değişikliği önemli:** `SCOPES` değiştirdiğinizde mevcut kurulumlar eski izinlerle çalışmaya devam eder. Uygulamayı test mağazasından kaldırıp yeniden kurmanız gerekir.
 
