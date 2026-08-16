@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link as RemixLink, useLoaderData } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import {
   Badge,
   BlockStack,
@@ -16,7 +16,7 @@ import {
   ProgressBar,
   Text,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useNavigate } from "@shopify/app-bridge-react";
 import { authenticate } from "~/shopify.server";
 import { ensureShop } from "~/lib/shop.server";
 import {
@@ -70,6 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function Overview() {
   const data = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const { metrics } = data;
   const themeEditorUrl = `https://${data.shopDomain}/admin/themes/current/editor?context=apps`;
 
@@ -83,7 +84,7 @@ export default function Overview() {
           <Banner tone="warning" title="Bilet şu anda kapalı">
             <p>
               Müşterileriniz kazı kazan biletini görmüyor.{" "}
-              <Link url="/app/settings" removeUnderline>
+              <Link onClick={() => navigate("/app/settings")} removeUnderline>
                 Bilet ayarlarından
               </Link>{" "}
               açabilirsiniz.
@@ -109,7 +110,7 @@ export default function Overview() {
               />
               <Text as="p" tone="subdued" variant="bodySm">
                 Ücretsiz planda ayda {data.quota.limit} gösterim var.{" "}
-                <Link url="/app/plans" removeUnderline>
+                <Link onClick={() => navigate("/app/plans")} removeUnderline>
                   Sınırsıza geçin
                 </Link>
                 .
@@ -164,7 +165,10 @@ export default function Overview() {
                     heading="Henüz gösterim yok"
                     image=""
                     action={{ content: "Tema düzenleyicide aç", url: themeEditorUrl, target: "_blank" }}
-                    secondaryAction={{ content: "Bilet ayarları", url: "/app/settings" }}
+                    secondaryAction={{
+                      content: "Bilet ayarları",
+                      onAction: () => navigate("/app/settings"),
+                    }}
                   >
                     <p>
                       Bileti yayına almak için tema düzenleyicide "Uygulama
@@ -233,7 +237,9 @@ export default function Overview() {
                   <Text as="p" variant="bodyMd">
                     {planByKey(data.plan).name}
                   </Text>
-                  <RemixLink to="/app/plans">Planları karşılaştır</RemixLink>
+                  <Link onClick={() => navigate("/app/plans")}>
+                    Planları karşılaştır
+                  </Link>
                 </BlockStack>
               </Card>
             </BlockStack>
