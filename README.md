@@ -226,11 +226,25 @@ Olasılıkların toplamı **tam 100** olmalıdır; panel ve API bunu birlikte do
 
 ## Diğer dokümanlar
 
+- [`docs/BASLANGIC.md`](docs/BASLANGIC.md) — **buradan başlayın:** sıfırdan App Store başvurusuna sıralı liste
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Railway'e dağıtım, adım adım
 - [`docs/APP_STORE.md`](docs/APP_STORE.md) — App Store başvuru kontrol listesi ve liste metinleri
 - [`docs/SCALING.md`](docs/SCALING.md) — Çoklu replica, Redis, performans
 
 ---
+
+## Herkese açık sayfalar
+
+Uygulama, App Store başvurusunda gereken sayfaları kendi içinde barındırır:
+
+| Sayfa | Yol |
+|---|---|
+| Gizlilik Politikası | `/privacy` |
+| Hizmet Şartları | `/terms` |
+| Destek | `/support` |
+
+İçerikteki şirket adı, e-posta ve adres `app/components/LegalPage.tsx` içindeki
+`COMPANY` bloğundan gelir. Yayına almadan önce doldurun.
 
 ## Lisans
 

@@ -16,8 +16,10 @@ Bu doküman başvuru öncesi kontrol listesi ve hazır liste metinlerini içerir
 - [x] **Gömülü (embedded) uygulama** App Bridge ile
 - [x] **Billing API** entegrasyonu (`appSubscriptionCreate`)
 - [ ] **Alan adında "shopify" kelimesi geçmiyor** ← Railway servis adını doğrula
-- [ ] **Gizlilik Politikası URL'si** canlı ve erişilebilir
-- [ ] **Hizmet Şartları URL'si** canlı ve erişilebilir
+- [x] **Gizlilik Politikası** uygulama içinde: `/privacy`
+- [x] **Hizmet Şartları** uygulama içinde: `/terms`
+- [x] **Destek sayfası** uygulama içinde: `/support`
+- [ ] `app/components/LegalPage.tsx` içindeki `COMPANY` bloğu dolduruldu
 - [ ] **Destek e-postası** çalışıyor
 
 ### Performans ve kalite
