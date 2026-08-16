@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
+import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import type { Prisma } from "@prisma/client";
 import {
   Badge,
@@ -13,7 +13,7 @@ import {
   Text,
   useSetIndexFiltersMode,
 } from "@shopify/polaris";
-import { TitleBar, useNavigate } from "@shopify/app-bridge-react";
+import { TitleBar } from "@shopify/app-bridge-react";
 import { useState } from "react";
 import { authenticate } from "~/shopify.server";
 import prisma from "~/db.server";
@@ -108,10 +108,7 @@ export default function Scratches() {
           <EmptyState
             heading="Henüz kazınan bilet yok"
             image=""
-            action={{
-              content: "Bilet ayarlarına git",
-              onAction: () => navigate("/app/settings"),
-            }}
+            action={{ content: "Bilet ayarlarına git", url: "/app/settings" }}
           >
             <p>
               Bir müşteri bileti kazıdığında olay burada tüm ayrıntısıyla listelenir.
