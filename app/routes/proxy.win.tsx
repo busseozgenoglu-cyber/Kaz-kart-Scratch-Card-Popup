@@ -89,6 +89,11 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     // Sessiz başarısızlık yok: hata loglanır ve müşteriye net bir mesaj döner.
+    // Shopify HTTP hatalarında (ör. 403) gövde boş gelebiliyor; teşhis için
+    // yanıtın durum kodu ve başlıkları da loglanır — asıl sebep genelde
+    // `www-authenticate` / `x-request-id` başlıklarında görünür.
+    const httpResponse = (error as { response?: Record<string, unknown> })
+      ?.response;
     console.error(
       "[scratchcart] indirim oluşturulamadı",
       JSON.stringify({
@@ -96,6 +101,14 @@ export async function action({ request }: ActionFunctionArgs) {
         tier,
         message: error instanceof Error ? error.message : String(error),
         details: error instanceof DiscountError ? error.details : undefined,
+        http: httpResponse
+          ? {
+              code: httpResponse.code ?? httpResponse.status,
+              statusText: httpResponse.statusText,
+              headers: httpResponse.headers,
+              body: httpResponse.body,
+            }
+          : undefined,
       }),
     );
     return json({ ok: false, error: "discount_failed" }, { status: 502 });
