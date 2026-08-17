@@ -63,12 +63,26 @@
 .sc-scrim {
   position: absolute;
   inset: 0;
+  /* Saydam cam: arkadaki mağaza silueti görünür, bulanıklık odağı bilete taşır.
+     backdrop-filter desteklemeyen tarayıcılarda alttaki opak katman devreye
+     girer, okunabilirlik hiçbir koşulda bozulmaz. */
   background:
-    radial-gradient(80% 55% at 50% 8%, rgba(232, 200, 138, 0.13), transparent 62%),
-    radial-gradient(90% 60% at 50% 100%, rgba(120, 92, 190, 0.14), transparent 60%),
+    radial-gradient(80% 55% at 50% 6%, rgba(232, 200, 138, 0.20), transparent 60%),
+    radial-gradient(95% 65% at 50% 100%, rgba(120, 92, 190, 0.22), transparent 58%),
     var(--sc-ink);
   opacity: 0;
   transition: opacity 0.4s ease;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .sc-scrim {
+    background:
+      radial-gradient(80% 55% at 50% 6%, rgba(232, 200, 138, 0.20), transparent 60%),
+      radial-gradient(95% 65% at 50% 100%, rgba(120, 92, 190, 0.22), transparent 58%),
+      rgba(9, 8, 16, 0.52);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    backdrop-filter: blur(22px) saturate(130%);
+  }
 }
 
 .sc-root[data-open="true"] .sc-scrim {
@@ -83,7 +97,7 @@
   border-radius: var(--sc-radius);
   color: var(--sc-on-surface);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 24%),
     linear-gradient(
       165deg,
       color-mix(in srgb, var(--sc-stock) 88%, white 12%),
@@ -91,6 +105,7 @@
     );
   border: 1px solid var(--sc-hairline);
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 0 0 1px rgba(0, 0, 0, 0.5),
     0 40px 90px -28px rgba(0, 0, 0, 0.9),
     0 0 70px -12px rgba(232, 200, 138, 0.16);
@@ -104,6 +119,22 @@
 .sc-root[data-open="true"] .sc-ticket {
   transform: translateY(0) scale(1);
   opacity: 1;
+}
+
+/* Cam gövde: arkadaki sayfa hafifçe sızar, kenarda ışık kırılır. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .sc-ticket {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 22%),
+      linear-gradient(
+        165deg,
+        color-mix(in srgb, var(--sc-stock) 74%, transparent),
+        color-mix(in srgb, var(--sc-stock) 88%, transparent) 62%
+      );
+    border-color: rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(30px) saturate(155%);
+    backdrop-filter: blur(30px) saturate(155%);
+  }
 }
 
 /* Üst kenarda ince altın parlama */
@@ -165,7 +196,35 @@
   background: #0e0c1a;
   box-shadow:
     0 0 0 1px var(--sc-hairline) inset,
-    0 14px 30px -18px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 14px 30px -18px rgba(0, 0, 0, 0.9),
+    0 0 34px -14px rgba(232, 200, 138, 0.3);
+}
+
+/* Holografik zemin: folyonun ALTINDA yavaşça dönen renk huzmesi. Kazıma
+   ilerledikçe açılan yüzeyde ödülün arkasında parıltı olarak görünür.
+   Tuvalin altında kalır, kazımayı engellemez. */
+.sc-panel::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  z-index: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    rgba(232, 200, 138, 0.22),
+    rgba(120, 92, 190, 0.26),
+    rgba(63, 214, 168, 0.16),
+    rgba(232, 200, 138, 0.22)
+  );
+  filter: blur(18px);
+  animation: sc-holo 14s linear infinite;
+}
+
+@keyframes sc-holo {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 /* Ödül: folyonun ALTINDA duran katman */
@@ -253,8 +312,9 @@
     transparent 62%
   );
   transform: translateX(-38%);
-  animation: sc-sweep 3.6s ease-in-out infinite;
+  animation: sc-sweep 3.2s ease-in-out infinite;
   mix-blend-mode: overlay;
+  z-index: 2;
 }
 
 /* Kazıma başlayınca huzme durur — dikkat ödüle geçmeli */
@@ -665,36 +725,40 @@
 /* --- Mobil --------------------------------------------------------------- */
 @media (max-width: 520px) {
   .sc-root {
-    padding: 0;
-  }
-
-  .sc-root[data-fullscreen="true"] .sc-ticket {
-    width: 100%;
-    height: 100%;
-    max-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border: 0;
-    border-radius: 0;
-    /* Çentik ve ana ekran çubuğu için güvenli alan payı */
+    /* Güvenli alan payı kökte verilir; kart her zaman yüzer durumda kalır. */
     padding:
-      max(28px, env(safe-area-inset-top)) 22px
-      max(22px, env(safe-area-inset-bottom));
-    transform: translateY(26px);
+      max(16px, env(safe-area-inset-top)) 14px
+      max(16px, env(safe-area-inset-bottom));
   }
 
-  .sc-root[data-fullscreen="true"][data-open="true"] .sc-ticket {
-    transform: translateY(0);
-  }
-
-  .sc-root[data-fullscreen="true"] .sc-ticket::before {
-    display: none;
-  }
-
+  /* Mobilde kart kenardan kenara YAPIŞMAZ. Kenarsız tam ekran, bileti bir
+     web sayfası gibi gösteriyordu; yüzen kart hem daha değerli durur hem
+     arkadaki mağazayı görünür bırakarak bağlamı korur.
+     Yükseklik içeriğe göre büyür, ekranı aşarsa kartın kendi içi kayar. */
+  .sc-root[data-fullscreen="true"] .sc-ticket,
   .sc-root:not([data-fullscreen="true"]) .sc-ticket {
-    width: calc(100% - 24px);
-    margin: 12px;
+    width: 100%;
+    /* Flex ogesinin varsayilan min-width'i icerige gore buyur; uzun buton
+       metni karti ekranin disina tasiyordu. Sifirlamak kucultmeyi serbest
+       birakir. */
+    min-width: 0;
+    max-width: 460px;
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 24px;
+    padding: 26px 20px 18px;
+    transform: translateY(22px) scale(0.985);
+  }
+
+  .sc-root[data-open="true"] .sc-ticket {
+    transform: translateY(0) scale(1);
+  }
+
+  /* Kazıma alanı mobilde daha cömert: parmakla kazımak kolaylaşır. */
+  .sc-panel {
+    aspect-ratio: 5 / 4;
   }
 
   /* Mobilde dokunma hedefleri büyür, tipografi nefes alır */
@@ -702,13 +766,19 @@
     font-size: 26px;
   }
 
-  .sc-panel {
-    aspect-ratio: 4 / 3;
+  .sc-cta {
+    padding: 16px 14px;
+    font-size: 13.5px;
+    letter-spacing: 0.04em;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
-  .sc-cta {
-    padding: 17px 18px;
-    font-size: 15px;
+  /* Baslik ve alt metin de dar ekranda tasmamali */
+  .sc-title,
+  .sc-subtitle,
+  .sc-terms {
+    overflow-wrap: anywhere;
   }
 
   .sc-close {
