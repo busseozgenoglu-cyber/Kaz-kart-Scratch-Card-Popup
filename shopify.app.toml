@@ -11,10 +11,18 @@ embedded = true
 automatically_update_urls_on_dev = true
 
 [access_scopes]
-# read_orders => kurtarılan siparişi eşleştirmek için (Protected customer data onayı gerekir)
+# Yalnızca fiilen kullanılan kapsamlar istenir.
 # write_discounts/read_discounts => indirim kodu üretimi ve temizliği
-# read_products => gelecekteki koleksiyon bazlı kurallar
-scopes = "read_products,read_orders,write_discounts,read_discounts"
+#
+# read_orders BİLEREK İSTENMİYOR: korumalı müşteri verisi (protected customer
+# data) kapsamıdır ve bu uygulamanın henüz onayı yok. Onaysız istendiğinde
+# Shopify kurulumu tam yetkilendirmiyor; token kapsamsız kalıyor ve TÜM Admin
+# API çağrıları — `{ shop { name } }` gibi basit okumalar dahil — gövdesiz
+# 403 Forbidden alıyor. Sipariş eşleştirmesi (orders/create webhook'u) ancak
+# onay alındıktan sonra bununla birlikte geri açılmalı.
+# read_products de kodda kullanılmıyordu; App Store incelemesi kullanılmayan
+# kapsamları reddediyor.
+scopes = "write_discounts,read_discounts"
 
 [auth]
 redirect_urls = [
