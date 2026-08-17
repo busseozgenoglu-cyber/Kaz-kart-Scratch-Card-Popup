@@ -48,22 +48,23 @@ api_version = "2025-10"
   # topics = [ "orders/create" ]
   # uri = "/webhooks/orders/create"
 
-  # --- Shopify tarafından ZORUNLU tutulan GDPR webhook'ları ---
-  # GEÇİCİ OLARAK YORUM SATIRINA ALINDI: Partner Dashboard'da "Protected
-  # customer data access" onayı alınana kadar deploy bu konularla
-  # reddediliyor. Onay alındıktan sonra bu blok geri açılıp yeniden deploy
-  # edilmeli (App Store başvurusundan önce zorunlu).
-  # [[webhooks.subscriptions]]
-  # topics = [ "customers/data_request" ]
-  # uri = "/webhooks/customers/data_request"
+  # --- Shopify tarafından ZORUNLU tutulan uyum (GDPR) webhook'ları ---
+  # Bunlar `topics` DEĞİL `compliance_topics` altında tanımlanır. Yanlış
+  # anahtarla yazıldığında Shopify deploy'u reddediyor ve hata mesajı
+  # korumalı müşteri verisi onayı eksikmiş gibi okunuyor; oysa sebep
+  # anahtarın kendisi. Uyum webhook'ları her uygulama için zorunludur ve
+  # ayrıca bir kapsam gerektirmez.
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
 
-  # [[webhooks.subscriptions]]
-  # topics = [ "customers/redact" ]
-  # uri = "/webhooks/customers/redact"
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
 
-  # [[webhooks.subscriptions]]
-  # topics = [ "shop/redact" ]
-  # uri = "/webhooks/shop/redact"
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
 
 [app_proxy]
 # Mağaza tarafındaki widget bu adres üzerinden konuşur:
