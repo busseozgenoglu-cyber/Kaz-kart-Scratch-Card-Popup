@@ -144,7 +144,15 @@ export default function Plans() {
                         </BlockStack>
 
                         <Box paddingBlockStart="200">
-                          <Form method="post">
+                          {/*
+                            `reloadDocument`: abonelik isteği Shopify'ın ödeme
+                            onay sayfasına yönlendiriyor ve o sayfa gömülü
+                            çerçevede açılamıyor. İstemci tarafı gönderimde
+                            yönlendirme çerçeve içinde takip edilmeye çalışılır
+                            ve tıklama sessizce sonuçsuz kalır. Tam sayfa
+                            gönderimde yönlendirme tarayıcıya bırakılır.
+                          */}
+                          <Form method="post" reloadDocument>
                             <input type="hidden" name="plan" value={plan.key} />
                             <Button
                               submit

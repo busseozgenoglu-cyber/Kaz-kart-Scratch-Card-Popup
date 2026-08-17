@@ -13,16 +13,13 @@ automatically_update_urls_on_dev = true
 [access_scopes]
 # Yalnızca fiilen kullanılan kapsamlar istenir.
 # write_discounts/read_discounts => indirim kodu üretimi ve temizliği
+# read_orders => sipariş eşleştirmesi; kurtarılan sepet ve ciro raporları
+#   yalnızca bununla çalışır (orders/create webhook'u). Korumalı müşteri
+#   verisi kapsamıdır ve App Store incelemesinde onaya tabidir.
 #
-# read_orders BİLEREK İSTENMİYOR: korumalı müşteri verisi (protected customer
-# data) kapsamıdır ve bu uygulamanın henüz onayı yok. Onaysız istendiğinde
-# Shopify kurulumu tam yetkilendirmiyor; token kapsamsız kalıyor ve TÜM Admin
-# API çağrıları — `{ shop { name } }` gibi basit okumalar dahil — gövdesiz
-# 403 Forbidden alıyor. Sipariş eşleştirmesi (orders/create webhook'u) ancak
-# onay alındıktan sonra bununla birlikte geri açılmalı.
-# read_products de kodda kullanılmıyordu; App Store incelemesi kullanılmayan
+# read_products istenmiyor: kodda kullanılmıyor ve inceleme kullanılmayan
 # kapsamları reddediyor.
-scopes = "write_discounts,read_discounts"
+scopes = "write_discounts,read_discounts,read_orders"
 
 [auth]
 redirect_urls = [
@@ -42,11 +39,11 @@ api_version = "2025-10"
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
-  # GEÇİCİ OLARAK YORUM SATIRINA ALINDI: orders/create de "protected customer
-  # data" kapsamında sayılıyor ve aynı onayı gerektiriyor.
-  # [[webhooks.subscriptions]]
-  # topics = [ "orders/create" ]
-  # uri = "/webhooks/orders/create"
+  # Sipariş eşleştirmesi: kurtarılan sepet ve ciro raporlarını besler.
+  # read_orders kapsamına bağlıdır.
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
 
   # --- Shopify tarafından ZORUNLU tutulan uyum (GDPR) webhook'ları ---
   # Bunlar `topics` DEĞİL `compliance_topics` altında tanımlanır. Yanlış
