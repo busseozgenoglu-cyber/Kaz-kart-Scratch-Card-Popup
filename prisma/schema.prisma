@@ -7,22 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Süreli (expiring) offline access token'lar için refreshToken/refreshTokenExpires
+// zorunludur. Shopify, 1 Nisan 2026'dan sonra public dağıtıma geçen uygulamalarda
+// süresiz offline token'ları kabul etmiyor: Admin API çağrıları gövdesiz
+// 403 Forbidden dönüyor. Kütüphane token'ı bu alanlarla kendisi yeniliyor.
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
 
   @@index([shop])
 }

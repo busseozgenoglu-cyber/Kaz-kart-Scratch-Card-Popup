@@ -57,7 +57,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Onay ekranına yönlendirir; dönüşte app.tsx planı senkronlar.
   await billing.request({
-    plan: definition.billingPlan,
+    // shopify-app-remix v4'te billing yapılandırmasının tipi (`BillingConfig`)
+    // yalnızca `[plan: string]` index imzası içeriyor, plan adlarını taşımıyor;
+    // bu yüzden `plan` alanı `never`e düşüyor. Değer çalışma zamanında doğru:
+    // `plans.ts`'deki adlar `shopify.server.ts`'deki billing anahtarlarıyla
+    // birebir aynı ve testler bunu doğruluyor.
+    plan: definition.billingPlan as unknown as never,
     isTest: process.env.NODE_ENV !== "production",
     returnUrl: `${process.env.SHOPIFY_APP_URL}/app/plans?shop=${session.shop}`,
   });

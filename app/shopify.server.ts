@@ -14,6 +14,9 @@ import {
 } from "./lib/billing.server";
 
 const shopify = shopifyApp({
+  // Anahtarlar `plans.ts`'deki BillingPlanName sabitleriyle birebir aynıdır.
+  // Yapılandırma inline yazılır: ayrı bir sabite çıkarıldığında TypeScript
+  // `currencyCode`/`interval` alanlarını genişletiyor ve tip uyuşmuyor.
   billing: {
     [STARTER_PLAN]: {
       lineItems: [
@@ -56,7 +59,14 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   future: {
     unstable_newEmbeddedAuthStrategy: true,
-    removeRest: true,
+    // `removeRest` v4'te kaldırıldı: REST istemcisi artık hiç paketlenmiyor,
+    // bayrağa gerek yok.
+    // Shopify, 1 Nisan 2026'dan sonra public dağıtıma geçen uygulamalarda
+    // süresiz offline access token kabul etmiyor. Bayrak kapalıyken tüm Admin
+    // API çağrıları — basit okumalar dahil — gövdesiz 403 Forbidden alıyor.
+    // Açıkken kütüphane 90 günlük refresh token ile erişim token'ını kendisi
+    // yeniler (Session.refreshToken / refreshTokenExpires alanları).
+    expiringOfflineAccessTokens: true,
   },
 });
 
