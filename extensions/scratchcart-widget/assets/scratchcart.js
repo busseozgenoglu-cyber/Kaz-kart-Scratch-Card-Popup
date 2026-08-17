@@ -566,12 +566,53 @@
     });
   }
 
+  /* ---------------------------------------------------------------------- rıza */
+
+  /**
+   * Ziyaretçinin izleme/analitik rızasını kontrol eder.
+   *
+   * Bilet gösterimi ve kazıma olayları mağaza panelinde raporlandığı için
+   * analitik sayılır. Ziyaretçi rıza bandında analitiği reddettiyse widget hiç
+   * açılmaz ve sunucuya hiçbir olay gönderilmez.
+   *
+   * Shopify'ın Customer Privacy API'si her temada hazır olmayabilir; API yoksa
+   * ya da henüz yüklenmediyse rıza belirsizdir. Bu durumda gösterime izin
+   * veriyoruz, çünkü toplanan veri kişiyi tanımlamıyor (rastgele oturum
+   * kimliği, cihaz türü, ülke kodu) ve mağazanın kendi rıza yapılandırması
+   * bölgeye göre bu API'yi hiç yüklemiyor olabilir.
+   */
+  function trackingAllowed() {
+    try {
+      var api = window.Shopify && window.Shopify.customerPrivacy;
+      if (!api) return true;
+
+      if (typeof api.analyticsProcessingAllowed === "function") {
+        return api.analyticsProcessingAllowed() !== false;
+      }
+      if (typeof api.userCanBeTracked === "function") {
+        // Ziyaretçi henüz seçim yapmadıysa `shouldShowBanner` true olur;
+        // seçim beklenirken engellemiyoruz.
+        if (
+          typeof api.shouldShowBanner === "function" &&
+          api.shouldShowBanner()
+        ) {
+          return true;
+        }
+        return api.userCanBeTracked() !== false;
+      }
+      return true;
+    } catch (error) {
+      return true;
+    }
+  }
+
   /* ------------------------------------------------------------------ başlat */
 
   function boot() {
     // Ödeme ve hesap sayfalarında hiçbir zaman gösterilmez.
     if (/^\/(checkouts?|account|challenge|password)/.test(location.pathname)) return;
     if (window.Shopify && window.Shopify.designMode) return; // tema düzenleyici
+    if (!trackingAllowed()) return; // ziyaretçi analitiği reddetti
 
     fetch(PROXY + "/config", { credentials: "same-origin" })
       .then(function (res) {

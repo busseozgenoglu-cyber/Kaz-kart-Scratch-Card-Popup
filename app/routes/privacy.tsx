@@ -43,8 +43,8 @@ export default function Privacy() {
         </li>
         <li>
           <strong>Kazı kazan olayları:</strong> rastgele üretilmiş anonim oturum
-          kimliği, cihaz türü (mobil/masaüstü/tablet), sepet tutarı, çıkan ödül,
-          zaman damgası.
+          kimliği, cihaz türü (mobil/masaüstü/tablet), ülke kodu, Shopify&apos;ın
+          ürettiği sepet belirteci, sepet tutarı, çıkan ödül, zaman damgası.
         </li>
         <li>
           <strong>İndirim kodları:</strong> uygulamanın Shopify üzerinde oluşturduğu
@@ -63,6 +63,14 @@ export default function Privacy() {
         ödeme bilgileri, IP adresinin kalıcı kaydı. IP adresi yalnızca kötüye
         kullanımı engelleyen hız sınırlaması için anlık olarak kullanılır ve
         veritabanına yazılmaz.
+      </P>
+
+      <H2>Ziyaretçi rızası</H2>
+      <P>
+        Bilet, mağazanın rıza bandı üzerinden analitik izlemeyi reddeden
+        ziyaretçilere hiç gösterilmez ve bu ziyaretçiler için sunucuya hiçbir
+        olay gönderilmez. Kontrol, Shopify&apos;ın Customer Privacy API&apos;si
+        üzerinden yapılır.
       </P>
 
       <H2>Saklama süreleri</H2>

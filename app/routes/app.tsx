@@ -7,6 +7,7 @@ import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "~/shopify.server";
 import { ensureShop } from "~/lib/shop.server";
 import { ensureExpiringToken } from "~/lib/token-migration.server";
+import { purgeExpiredScratchesThrottled } from "~/lib/retention.server";
 import { planByKey, syncPlan, type PlanKey } from "~/lib/billing.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
@@ -21,6 +22,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   await ensureExpiringToken(session);
 
   const shop = await ensureShop(session.shop);
+
+  // Saklama süresi dolan kişisel veriyi günde bir kez temizler.
+  await purgeExpiredScratchesThrottled();
 
   // Aktif aboneliği her yüklemede Shopify'dan doğrula; panel ile fatura
   // durumu birbirinden ayrışmasın.
