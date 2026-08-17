@@ -74,6 +74,13 @@ model ShopSettings {
   tier15PercentProb    Int @default(15)
   tier20PercentProb    Int @default(5)
 
+  // Kademelerin indirim yüzdeleri. Satıcı bunları serbestçe belirler;
+  // alan adlarındaki 10/15/20 yalnızca kademe slotunu (tier id'sini)
+  // gösterir, dağıtılan gerçek oran bu sütunlardaki değerdir.
+  tier10PercentValue Int @default(10)
+  tier15PercentValue Int @default(15)
+  tier20PercentValue Int @default(20)
+
   // Ödül değerleri
   freeShippingThreshold Decimal? @default(150.00) @db.Decimal(10, 2)
   minCartValue          Decimal? @default(50.00) @db.Decimal(10, 2)

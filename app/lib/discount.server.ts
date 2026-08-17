@@ -1,6 +1,11 @@
 import type { ShopSettings } from "@prisma/client";
 import prisma from "~/db.server";
-import { generateCode, tierValue, type Tier } from "./scratch-engine.server";
+import {
+  generateCode,
+  tierValue,
+  tierValues,
+  type Tier,
+} from "./scratch-engine.server";
 
 /**
  * NOT (spec düzeltmesi):
@@ -133,7 +138,7 @@ export async function createDiscountForTier(params: {
       "discountCodeFreeShippingCreate",
     );
   } else {
-    value = tierValue(tier);
+    value = tierValue(tier, tierValues(settings));
     const minCart = Number(settings.minCartValue ?? 0);
     const response = await admin.graphql(BASIC_DISCOUNT_MUTATION, {
       variables: {

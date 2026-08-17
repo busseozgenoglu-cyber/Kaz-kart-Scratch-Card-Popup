@@ -142,6 +142,36 @@ describe("parseSettingsForm", () => {
     expect(data.language).toBe("tr");
   });
 
+  it("satıcının yazdığı indirim oranlarını kaydeder", () => {
+    const { errors, data } = parseSettingsForm(
+      form({
+        tier10PercentValue: "7",
+        tier15PercentValue: "22",
+        tier20PercentValue: "35",
+      }),
+    );
+    expect(errors).toEqual({});
+    expect(data.tier10PercentValue).toBe(7);
+    expect(data.tier15PercentValue).toBe(22);
+    expect(data.tier20PercentValue).toBe(35);
+  });
+
+  it("indirim oranı alanı gönderilmezse varsayılanı korur", () => {
+    // Alan formda hiç yoksa "0 girildi" sayılmamalı.
+    const { errors, data } = parseSettingsForm(form());
+    expect(errors.tier10PercentValue).toBeUndefined();
+    expect(data.tier10PercentValue).toBe(10);
+    expect(data.tier15PercentValue).toBe(15);
+    expect(data.tier20PercentValue).toBe(20);
+  });
+
+  it("aralık dışındaki indirim oranını reddeder", () => {
+    const { errors } = parseSettingsForm(form({ tier10PercentValue: "0" }));
+    expect(errors.tier10PercentValue).toBeTruthy();
+    const tooHigh = parseSettingsForm(form({ tier20PercentValue: "150" }));
+    expect(tooHigh.errors.tier20PercentValue).toBeTruthy();
+  });
+
   it("ödül oranları 100 etmiyorsa reddeder", () => {
     const { errors } = parseSettingsForm(form({ tier20PercentProb: "20" }));
     expect(errors.probabilities).toBeTruthy();

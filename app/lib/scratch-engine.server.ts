@@ -2,12 +2,16 @@ import crypto from "node:crypto";
 import type { ShopSettings } from "@prisma/client";
 import prisma from "~/db.server";
 import {
+  DEFAULT_TIER_VALUES,
   FREE_PLAN_TIERS,
+  MAX_TIER_VALUE,
+  MIN_TIER_VALUE,
   TIERS,
   tierLabel,
   tierValue,
   validateProbabilities,
   type Tier,
+  type TierValues,
   type TierWeights,
 } from "./tiers";
 
@@ -16,14 +20,28 @@ import {
 // doğrudan `~/lib/tiers`'dan almalı, bu dosyadan DEĞİL — aksi halde build
 // "Server-only module referenced by client" hatası verir.
 export {
+  DEFAULT_TIER_VALUES,
   FREE_PLAN_TIERS,
+  MAX_TIER_VALUE,
+  MIN_TIER_VALUE,
   TIERS,
   tierLabel,
   tierValue,
   validateProbabilities,
   type Tier,
+  type TierValues,
   type TierWeights,
 };
+
+/** Satıcının belirlediği indirim yüzdelerini ayarlardan okur. */
+export function tierValues(settings: ShopSettings): TierValues {
+  return {
+    free_shipping: 0,
+    "10_percent": settings.tier10PercentValue,
+    "15_percent": settings.tier15PercentValue,
+    "20_percent": settings.tier20PercentValue,
+  };
+}
 
 export function tierWeights(settings: ShopSettings): TierWeights {
   return {

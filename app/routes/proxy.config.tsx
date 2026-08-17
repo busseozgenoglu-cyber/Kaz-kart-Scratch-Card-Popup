@@ -2,7 +2,13 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "~/shopify.server";
 import { json } from "~/lib/cors.server";
 import { getShopByDomain } from "~/lib/shop.server";
-import { checkQuota, FREE_PLAN_TIERS, tierLabel, TIERS } from "~/lib/scratch-engine.server";
+import {
+  checkQuota,
+  FREE_PLAN_TIERS,
+  tierLabel,
+  tierValues,
+  TIERS,
+} from "~/lib/scratch-engine.server";
 import { widgetStrings } from "~/i18n/widget";
 
 /**
@@ -49,7 +55,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Olasılıklar bilinçli olarak paylaşılmaz: çekiliş yalnızca sunucuda yapılır.
     tiers: availableTiers.map((tier) => ({
       type: tier,
-      label: tierLabel(tier, s.language),
+      label: tierLabel(tier, s.language, tierValues(s)),
     })),
     minCartValue: Number(s.minCartValue ?? 0),
     autoApply: s.autoApply,

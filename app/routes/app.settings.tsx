@@ -24,6 +24,7 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "~/shopify.server";
 import prisma from "~/db.server";
 import { ensureShop, parseSettingsForm } from "~/lib/shop.server";
+import { MAX_TIER_VALUE, MIN_TIER_VALUE } from "~/lib/tiers";
 import { TicketPreview } from "~/components/TicketPreview";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -248,26 +249,37 @@ export default function Settings() {
                     Ödüller ve çıkma oranları
                   </Text>
 
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    İndirim oranlarını siz belirlersiniz. Soldaki kutuya oranı
+                    yazın, kaydırıcıyla o ödülün çıkma olasılığını ayarlayın.
+                  </Text>
+
                   <ProbabilityField
                     label="Kargo bedava"
                     value={form.tierFreeShippingProb}
                     onChange={(value) => update("tierFreeShippingProb", value)}
                   />
-                  <ProbabilityField
-                    label="%10 indirim"
-                    value={form.tier10PercentProb}
-                    onChange={(value) => update("tier10PercentProb", value)}
+                  <TierRow
+                    percent={form.tier10PercentValue}
+                    onPercentChange={(value) => update("tier10PercentValue", value)}
+                    percentError={errors.tier10PercentValue}
+                    probability={form.tier10PercentProb}
+                    onProbabilityChange={(value) => update("tier10PercentProb", value)}
                   />
-                  <ProbabilityField
-                    label="%15 indirim"
-                    value={form.tier15PercentProb}
-                    onChange={(value) => update("tier15PercentProb", value)}
+                  <TierRow
+                    percent={form.tier15PercentValue}
+                    onPercentChange={(value) => update("tier15PercentValue", value)}
+                    percentError={errors.tier15PercentValue}
+                    probability={form.tier15PercentProb}
+                    onProbabilityChange={(value) => update("tier15PercentProb", value)}
                     locked={freePlan}
                   />
-                  <ProbabilityField
-                    label="%20 indirim"
-                    value={form.tier20PercentProb}
-                    onChange={(value) => update("tier20PercentProb", value)}
+                  <TierRow
+                    percent={form.tier20PercentValue}
+                    onPercentChange={(value) => update("tier20PercentValue", value)}
+                    percentError={errors.tier20PercentValue}
+                    probability={form.tier20PercentProb}
+                    onProbabilityChange={(value) => update("tier20PercentProb", value)}
                     locked={freePlan}
                   />
 
@@ -495,6 +507,52 @@ function Suffix({ children }: { children: React.ReactNode }) {
         {children}
       </Text>
     </div>
+  );
+}
+
+/**
+ * Bir indirim kademesi: oranı satıcı yazar, çıkma olasılığını kaydırıcıyla
+ * ayarlar. Kademe adı sabit değil — girilen orana göre kendini yeniler.
+ */
+function TierRow({
+  percent,
+  onPercentChange,
+  percentError,
+  probability,
+  onProbabilityChange,
+  locked,
+}: {
+  percent: number;
+  onPercentChange: (value: number) => void;
+  percentError?: string;
+  probability: number;
+  onProbabilityChange: (value: number) => void;
+  locked?: boolean;
+}) {
+  return (
+    <InlineStack gap="400" wrap={false} blockAlign="start">
+      <Box width="120px">
+        <TextField
+          label="İndirim"
+          type="number"
+          min={MIN_TIER_VALUE}
+          max={MAX_TIER_VALUE}
+          suffix="%"
+          value={String(percent)}
+          error={percentError}
+          onChange={(value) => onPercentChange(Number(value))}
+          autoComplete="off"
+        />
+      </Box>
+      <Box width="100%">
+        <ProbabilityField
+          label={`%${percent} indirim`}
+          value={probability}
+          onChange={onProbabilityChange}
+          locked={locked}
+        />
+      </Box>
+    </InlineStack>
   );
 }
 

@@ -22,41 +22,54 @@ export type TierWeights = Record<Tier, number>;
 /** Ücretsiz planda yalnızca ilk iki ödül dağıtılır (plan limiti). */
 export const FREE_PLAN_TIERS: Tier[] = ["free_shipping", "10_percent"];
 
-export function tierValue(tier: Tier): number {
-  switch (tier) {
-    case "10_percent":
-      return 10;
-    case "15_percent":
-      return 15;
-    case "20_percent":
-      return 20;
-    default:
-      return 0;
-  }
+/**
+ * Kademelerin indirim yüzdeleri. Satıcı bunları panelden belirler; tier
+ * id'lerindeki 10/15/20 yalnızca slot adıdır, gerçek oran buradan gelir.
+ */
+export type TierValues = Record<Tier, number>;
+
+/** Satıcı bir şey değiştirmediğinde kullanılan oranlar. */
+export const DEFAULT_TIER_VALUES: TierValues = {
+  free_shipping: 0,
+  "10_percent": 10,
+  "15_percent": 15,
+  "20_percent": 20,
+};
+
+/** Yüzde alanları için kabul edilen aralık. */
+export const MIN_TIER_VALUE = 1;
+export const MAX_TIER_VALUE = 100;
+
+export function tierValue(
+  tier: Tier,
+  values: TierValues = DEFAULT_TIER_VALUES,
+): number {
+  if (tier === "free_shipping") return 0;
+  const value = values[tier];
+  return Number.isFinite(value) ? value : DEFAULT_TIER_VALUES[tier];
 }
 
-export function tierLabel(tier: Tier, language = "tr"): string {
-  const labels: Record<string, Record<Tier, string>> = {
-    tr: {
-      free_shipping: "KARGO BEDAVA",
-      "10_percent": "%10 İNDİRİM",
-      "15_percent": "%15 İNDİRİM",
-      "20_percent": "%20 İNDİRİM",
-    },
-    en: {
-      free_shipping: "FREE SHIPPING",
-      "10_percent": "10% OFF",
-      "15_percent": "15% OFF",
-      "20_percent": "20% OFF",
-    },
-    es: {
-      free_shipping: "ENVÍO GRATIS",
-      "10_percent": "10% DESC.",
-      "15_percent": "15% DESC.",
-      "20_percent": "20% DESC.",
-    },
+export function tierLabel(
+  tier: Tier,
+  language = "tr",
+  values: TierValues = DEFAULT_TIER_VALUES,
+): string {
+  const freeShipping: Record<string, string> = {
+    tr: "KARGO BEDAVA",
+    en: "FREE SHIPPING",
+    es: "ENVÍO GRATIS",
   };
-  return (labels[language] ?? labels.tr)[tier];
+  const percentTemplate: Record<string, (percent: number) => string> = {
+    tr: (percent) => `%${percent} İNDİRİM`,
+    en: (percent) => `${percent}% OFF`,
+    es: (percent) => `${percent}% DESC.`,
+  };
+
+  if (tier === "free_shipping") {
+    return freeShipping[language] ?? freeShipping.tr;
+  }
+  const template = percentTemplate[language] ?? percentTemplate.tr;
+  return template(tierValue(tier, values));
 }
 
 /** Olasılıkların toplamı 100 mü? Admin formu ve API bunu birlikte kullanır. */

@@ -18,6 +18,7 @@ import { useState } from "react";
 import { authenticate } from "~/shopify.server";
 import prisma from "~/db.server";
 import { ensureShop } from "~/lib/shop.server";
+import { tierValues } from "~/lib/scratch-engine.server";
 import { tierLabel, type Tier } from "~/lib/tiers";
 
 const PAGE_SIZE = 50;
@@ -54,6 +55,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     total,
     pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
     language: shop.settings.language,
+    tierValues: tierValues(shop.settings),
     filters: { tier, status, device },
     rows: rows.map((row) => ({
       id: row.id,
@@ -241,7 +243,9 @@ export default function Scratches() {
                 </Text>
               </IndexTable.Cell>
               <IndexTable.Cell>
-                {row.tier ? tierLabel(row.tier as Tier, data.language) : "—"}
+                {row.tier
+                  ? tierLabel(row.tier as Tier, data.language, data.tierValues)
+                  : "—"}
               </IndexTable.Cell>
               <IndexTable.Cell>
                 <Text as="span" variant="bodySm" fontWeight="medium">

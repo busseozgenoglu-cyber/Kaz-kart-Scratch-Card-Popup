@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { Shop, ShopSettings } from "@prisma/client";
 import prisma from "~/db.server";
 import { addMonths, planLimit } from "./scratch-engine.server";
+import { MAX_TIER_VALUE, MIN_TIER_VALUE } from "./tiers";
 
 export type ShopWithSettings = Shop & { settings: ShopSettings };
 
@@ -94,6 +95,17 @@ export function parseSettingsForm(form: FormData): {
     return Number.isFinite(value) ? value : fallback;
   };
   const bool = (key: string) => form.get(key) === "true";
+  /**
+   * `num` eksik alanı 0 olarak okur (Number(null) === 0). Yüzde alanlarında bu
+   * yanlış olur: alan hiç gönderilmediyse satıcının mevcut/varsayılan oranı
+   * korunmalı, "0 girilmiş" sayılmamalı.
+   */
+  const numOrFallback = (key: string, fallback: number) => {
+    const raw = form.get(key);
+    if (raw === null || String(raw).trim() === "") return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : fallback;
+  };
 
   const colors = {
     backgroundColor: str("backgroundColor", "#0B0A12"),
@@ -118,6 +130,22 @@ export function parseSettingsForm(form: FormData): {
   const probTotal = Object.values(probs).reduce((a, b) => a + b, 0);
   if (probTotal !== 100) {
     errors.probabilities = `Ödül oranlarının toplamı 100 olmalı, şu an ${probTotal}.`;
+  }
+
+  // İndirim yüzdeleri satıcıya bırakılmıştır; yalnızca makul aralık zorlanır.
+  const tierValueFields = {
+    tier10PercentValue: 10,
+    tier15PercentValue: 15,
+    tier20PercentValue: 20,
+  } as const;
+
+  const tierValueEntries: Record<string, number> = {};
+  for (const [key, fallback] of Object.entries(tierValueFields)) {
+    const raw = numOrFallback(key, fallback);
+    if (raw < MIN_TIER_VALUE || raw > MAX_TIER_VALUE) {
+      errors[key] = `İndirim oranı ${MIN_TIER_VALUE} ile ${MAX_TIER_VALUE} arasında olmalı.`;
+    }
+    tierValueEntries[key] = clamp(raw, MIN_TIER_VALUE, MAX_TIER_VALUE);
   }
 
   const title = str("title");
@@ -151,6 +179,7 @@ export function parseSettingsForm(form: FormData): {
     ...colors,
     fontFamily: str("fontFamily", "system"),
     ...probs,
+    ...tierValueEntries,
     freeShippingThreshold: toDecimal(num("freeShippingThreshold", 150)),
     minCartValue: toDecimal(num("minCartValue", 50)),
     discountValidMinutes: clamp(num("discountValidMinutes", 30), 5, 1440),

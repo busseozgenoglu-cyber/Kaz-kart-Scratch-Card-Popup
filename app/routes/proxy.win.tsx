@@ -12,6 +12,7 @@ import {
   determineTier,
   FREE_PLAN_TIERS,
   tierLabel,
+  tierValues,
   TIERS,
   type Tier,
 } from "~/lib/scratch-engine.server";
@@ -60,7 +61,11 @@ export async function action({ request }: ActionFunctionArgs) {
       ok: true,
       code: previousWin.discountCode,
       tier: previousWin.tierWon,
-      label: tierLabel(previousWin.tierWon as Tier, settings.language),
+      label: tierLabel(
+        previousWin.tierWon as Tier,
+        settings.language,
+        tierValues(settings),
+      ),
       validMinutes: settings.discountValidMinutes,
       replayed: true,
     });
@@ -144,7 +149,7 @@ export async function action({ request }: ActionFunctionArgs) {
     ok: true,
     code: discount.code,
     tier,
-    label: tierLabel(tier, settings.language),
+    label: tierLabel(tier, settings.language, tierValues(settings)),
     validMinutes: settings.discountValidMinutes,
   });
 }
