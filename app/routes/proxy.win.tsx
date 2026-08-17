@@ -94,6 +94,25 @@ export async function action({ request }: ActionFunctionArgs) {
     // `www-authenticate` / `x-request-id` başlıklarında görünür.
     const httpResponse = (error as { response?: Record<string, unknown> })
       ?.response;
+
+    // GEÇİCİ TEŞHİS: aynı token'la basit bir OKUMA sorgusu dene. Bu da 403
+    // alıyorsa sorun token/uygulama yetkisindedir; yalnızca mutation 403
+    // alıyorsa sorun kapsam veya mutation'a özgüdür.
+    let probe: string;
+    try {
+      const probeResponse = await admin.graphql("{ shop { name } }");
+      const probeBody = await probeResponse.json();
+      probe = `ok status=${probeResponse.status} shop=${
+        (probeBody as { data?: { shop?: { name?: string } } })?.data?.shop?.name
+      }`;
+    } catch (probeError) {
+      const probeHttp = (probeError as { response?: { code?: number } })
+        ?.response;
+      probe = `FAILED status=${probeHttp?.code} message=${
+        probeError instanceof Error ? probeError.message : String(probeError)
+      }`;
+    }
+    console.error("[scratchcart] teşhis: shop okuma sorgusu →", probe);
     console.error(
       "[scratchcart] indirim oluşturulamadı",
       JSON.stringify({
