@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { apiVersion, authenticate } from "~/shopify.server";
+import { authenticate, unauthenticated } from "~/shopify.server";
+import { ensureExpiringToken } from "~/lib/token-migration.server";
 import prisma from "~/db.server";
 import { json, tooManyRequests } from "~/lib/cors.server";
 import { clientKey, rateLimit } from "~/lib/rate-limit.server";
@@ -23,10 +24,21 @@ import {
  * yönlendiremez ve aynı oturumda ikinci kez kod alamaz.
  */
 export async function action({ request }: ActionFunctionArgs) {
-  const { session, admin } = await authenticate.public.appProxy(request);
-  if (!session?.shop || !admin) {
+  const { session, admin: proxyAdmin } =
+    await authenticate.public.appProxy(request);
+  if (!session?.shop || !proxyAdmin) {
     return json({ ok: false, error: "unknown" }, { status: 401 });
   }
+
+  // Süresiz token'lar Admin API'de artık reddediliyor (gövdesiz 403). Bayrak
+  // öncesi kurulmuş mağazalar için token burada bir kez taşınır; taşınırsa
+  // istemci yeni token'la yeniden oluşturulmalıdır, çünkü `proxyAdmin`
+  // eskisini taşıyor.
+  const migrated = await ensureExpiringToken(session);
+  const admin =
+    migrated === session
+      ? proxyAdmin
+      : (await unauthenticated.admin(session.shop)).admin;
 
   const limit = rateLimit(clientKey(request, session.shop, "win"), 8, 60_000);
   if (!limit.allowed) {
@@ -89,71 +101,12 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     // Sessiz başarısızlık yok: hata loglanır ve müşteriye net bir mesaj döner.
-    // Shopify HTTP hatalarında (ör. 403) gövde boş gelebiliyor; teşhis için
-    // yanıtın durum kodu ve başlıkları da loglanır — asıl sebep genelde
-    // `www-authenticate` / `x-request-id` başlıklarında görünür.
+    // Shopify'ın HTTP hataları için durum kodu ve gövdesi de yazılır; asıl
+    // açıklama genelde gövdede olur (ör. süresiz token reddi 403 ile gelir ve
+    // sebebi yalnızca gövdede yazar).
     const httpResponse = (error as { response?: Record<string, unknown> })
       ?.response;
 
-    // GEÇİCİ TEŞHİS: Shopify'ın HAM yanıtını oku. `admin.graphql` hatayı
-    // sarmalayıp gövdeyi yutuyor, bu yüzden doğrudan fetch ediyoruz.
-    //
-    // İki sorgu denenir:
-    //  1) `{ shop { name } }`  — kapsam gerektirebilir, tek başına yanıltıcı
-    //  2) `discountNodes`      — read_discounts kapsamımızın tam içinde
-    // 2 çalışıp mutation başarısız olursa sorun mutation'a özgüdür; ikisi de
-    // 403 alırsa token/kurulum yetkilendirmesi reddediliyor demektir.
-    const probeRaw = async (label: string, query: string) => {
-      try {
-        const res = await fetch(
-          `https://${session.shop}/admin/api/${apiVersion}/graphql.json`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": session.accessToken ?? "",
-            },
-            body: JSON.stringify({ query }),
-          },
-        );
-        const text = await res.text();
-        console.error(
-          `[scratchcart] teşhis ham ${label} →`,
-          JSON.stringify({
-            status: res.status,
-            callLimit: res.headers.get("x-shopify-shop-api-call-limit"),
-            requestId: res.headers.get("x-request-id"),
-            contentType: res.headers.get("content-type"),
-            body: text.slice(0, 500),
-          }),
-        );
-      } catch (probeError) {
-        console.error(
-          `[scratchcart] teşhis ham ${label} → istek atılamadı`,
-          probeError instanceof Error ? probeError.message : String(probeError),
-        );
-      }
-    };
-    await probeRaw("shop", "{ shop { name } }");
-    await probeRaw(
-      "discounts",
-      "{ discountNodes(first: 1) { nodes { id } } }",
-    );
-    // GEÇİCİ TEŞHİS: oturum kaydının durumu. Token'ın kendisi ASLA loglanmaz;
-    // yalnızca var olup olmadığı ve uzunluğu yazılır. Shopify, token başlığı
-    // boş/eksik geldiğinde gövdesiz 403 döndürür — okuma sorgusunun da 403
-    // alması bu ihtimali işaret ediyor.
-    console.error(
-      "[scratchcart] teşhis: oturum →",
-      JSON.stringify({
-        id: session.id,
-        isOnline: session.isOnline,
-        scope: session.scope ?? null,
-        expires: session.expires ?? null,
-        hasToken: Boolean(session.accessToken),
-        tokenLength: session.accessToken?.length ?? 0,
-      }),
-    );
     console.error(
       "[scratchcart] indirim oluşturulamadı",
       JSON.stringify({
@@ -165,7 +118,6 @@ export async function action({ request }: ActionFunctionArgs) {
           ? {
               code: httpResponse.code ?? httpResponse.status,
               statusText: httpResponse.statusText,
-              headers: httpResponse.headers,
               body: httpResponse.body,
             }
           : undefined,

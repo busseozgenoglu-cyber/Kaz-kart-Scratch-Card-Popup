@@ -6,12 +6,20 @@ import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "~/shopify.server";
 import { ensureShop } from "~/lib/shop.server";
+import { ensureExpiringToken } from "~/lib/token-migration.server";
 import { planByKey, syncPlan, type PlanKey } from "~/lib/billing.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session, billing } = await authenticate.admin(request);
+
+  // Süresiz offline token'lar Admin API'de reddediliyor. Merchant paneli
+  // açtığında taşımayı burada da tetikliyoruz, böylece mağaza vitrinde ilk
+  // kazıma denemesini beklemek zorunda kalmıyor. Bu yüklemedeki `billing`
+  // istemcisi hâlâ eski token'ı taşır; bir sonraki yüklemede yenisi okunur.
+  await ensureExpiringToken(session);
+
   const shop = await ensureShop(session.shop);
 
   // Aktif aboneliği her yüklemede Shopify'dan doğrula; panel ile fatura
