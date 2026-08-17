@@ -8,7 +8,6 @@ application_url = "https://kaz-kart-scratch-card-popup-production.up.railway.app
 embedded = true
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
 
 [access_scopes]
@@ -25,7 +24,7 @@ redirect_urls = [
 ]
 
 [webhooks]
-api_version = "2025-01"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [ "app/uninstalled" ]
@@ -35,22 +34,28 @@ api_version = "2025-01"
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
-  [[webhooks.subscriptions]]
-  topics = [ "orders/create" ]
-  uri = "/webhooks/orders/create"
+  # GEÇİCİ OLARAK YORUM SATIRINA ALINDI: orders/create de "protected customer
+  # data" kapsamında sayılıyor ve aynı onayı gerektiriyor.
+  # [[webhooks.subscriptions]]
+  # topics = [ "orders/create" ]
+  # uri = "/webhooks/orders/create"
 
   # --- Shopify tarafından ZORUNLU tutulan GDPR webhook'ları ---
-  [[webhooks.subscriptions]]
-  topics = [ "customers/data_request" ]
-  uri = "/webhooks/customers/data_request"
+  # GEÇİCİ OLARAK YORUM SATIRINA ALINDI: Partner Dashboard'da "Protected
+  # customer data access" onayı alınana kadar deploy bu konularla
+  # reddediliyor. Onay alındıktan sonra bu blok geri açılıp yeniden deploy
+  # edilmeli (App Store başvurusundan önce zorunlu).
+  # [[webhooks.subscriptions]]
+  # topics = [ "customers/data_request" ]
+  # uri = "/webhooks/customers/data_request"
 
-  [[webhooks.subscriptions]]
-  topics = [ "customers/redact" ]
-  uri = "/webhooks/customers/redact"
+  # [[webhooks.subscriptions]]
+  # topics = [ "customers/redact" ]
+  # uri = "/webhooks/customers/redact"
 
-  [[webhooks.subscriptions]]
-  topics = [ "shop/redact" ]
-  uri = "/webhooks/shop/redact"
+  # [[webhooks.subscriptions]]
+  # topics = [ "shop/redact" ]
+  # uri = "/webhooks/shop/redact"
 
 [app_proxy]
 # Mağaza tarafındaki widget bu adres üzerinden konuşur:
