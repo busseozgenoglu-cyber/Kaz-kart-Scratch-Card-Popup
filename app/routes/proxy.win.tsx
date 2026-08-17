@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { authenticate } from "~/shopify.server";
+import { apiVersion, authenticate } from "~/shopify.server";
 import prisma from "~/db.server";
 import { json, tooManyRequests } from "~/lib/cors.server";
 import { clientKey, rateLimit } from "~/lib/rate-limit.server";
@@ -95,24 +95,50 @@ export async function action({ request }: ActionFunctionArgs) {
     const httpResponse = (error as { response?: Record<string, unknown> })
       ?.response;
 
-    // GEÇİCİ TEŞHİS: aynı token'la basit bir OKUMA sorgusu dene. Bu da 403
-    // alıyorsa sorun token/uygulama yetkisindedir; yalnızca mutation 403
-    // alıyorsa sorun kapsam veya mutation'a özgüdür.
-    let probe: string;
-    try {
-      const probeResponse = await admin.graphql("{ shop { name } }");
-      const probeBody = await probeResponse.json();
-      probe = `ok status=${probeResponse.status} shop=${
-        (probeBody as { data?: { shop?: { name?: string } } })?.data?.shop?.name
-      }`;
-    } catch (probeError) {
-      const probeHttp = (probeError as { response?: { code?: number } })
-        ?.response;
-      probe = `FAILED status=${probeHttp?.code} message=${
-        probeError instanceof Error ? probeError.message : String(probeError)
-      }`;
-    }
-    console.error("[scratchcart] teşhis: shop okuma sorgusu →", probe);
+    // GEÇİCİ TEŞHİS: Shopify'ın HAM yanıtını oku. `admin.graphql` hatayı
+    // sarmalayıp gövdeyi yutuyor, bu yüzden doğrudan fetch ediyoruz.
+    //
+    // İki sorgu denenir:
+    //  1) `{ shop { name } }`  — kapsam gerektirebilir, tek başına yanıltıcı
+    //  2) `discountNodes`      — read_discounts kapsamımızın tam içinde
+    // 2 çalışıp mutation başarısız olursa sorun mutation'a özgüdür; ikisi de
+    // 403 alırsa token/kurulum yetkilendirmesi reddediliyor demektir.
+    const probeRaw = async (label: string, query: string) => {
+      try {
+        const res = await fetch(
+          `https://${session.shop}/admin/api/${apiVersion}/graphql.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": session.accessToken ?? "",
+            },
+            body: JSON.stringify({ query }),
+          },
+        );
+        const text = await res.text();
+        console.error(
+          `[scratchcart] teşhis ham ${label} →`,
+          JSON.stringify({
+            status: res.status,
+            callLimit: res.headers.get("x-shopify-shop-api-call-limit"),
+            requestId: res.headers.get("x-request-id"),
+            contentType: res.headers.get("content-type"),
+            body: text.slice(0, 500),
+          }),
+        );
+      } catch (probeError) {
+        console.error(
+          `[scratchcart] teşhis ham ${label} → istek atılamadı`,
+          probeError instanceof Error ? probeError.message : String(probeError),
+        );
+      }
+    };
+    await probeRaw("shop", "{ shop { name } }");
+    await probeRaw(
+      "discounts",
+      "{ discountNodes(first: 1) { nodes { id } } }",
+    );
     // GEÇİCİ TEŞHİS: oturum kaydının durumu. Token'ın kendisi ASLA loglanmaz;
     // yalnızca var olup olmadığı ve uzunluğu yazılır. Shopify, token başlığı
     // boş/eksik geldiğinde gövdesiz 403 döndürür — okuma sorgusunun da 403
