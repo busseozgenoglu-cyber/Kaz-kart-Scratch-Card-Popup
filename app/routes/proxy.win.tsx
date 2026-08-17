@@ -113,6 +113,21 @@ export async function action({ request }: ActionFunctionArgs) {
       }`;
     }
     console.error("[scratchcart] teşhis: shop okuma sorgusu →", probe);
+    // GEÇİCİ TEŞHİS: oturum kaydının durumu. Token'ın kendisi ASLA loglanmaz;
+    // yalnızca var olup olmadığı ve uzunluğu yazılır. Shopify, token başlığı
+    // boş/eksik geldiğinde gövdesiz 403 döndürür — okuma sorgusunun da 403
+    // alması bu ihtimali işaret ediyor.
+    console.error(
+      "[scratchcart] teşhis: oturum →",
+      JSON.stringify({
+        id: session.id,
+        isOnline: session.isOnline,
+        scope: session.scope ?? null,
+        expires: session.expires ?? null,
+        hasToken: Boolean(session.accessToken),
+        tokenLength: session.accessToken?.length ?? 0,
+      }),
+    );
     console.error(
       "[scratchcart] indirim oluşturulamadı",
       JSON.stringify({
