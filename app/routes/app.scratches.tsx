@@ -110,7 +110,10 @@ export default function Scratches() {
           <EmptyState
             heading="Henüz kazınan bilet yok"
             image=""
-            action={{ content: "Bilet ayarlarına git", url: "/app/settings" }}
+            action={{
+              content: "Bilet ayarlarına git",
+              onAction: () => navigate("/app/settings"),
+            }}
           >
             <p>
               Bir müşteri bileti kazıdığında olay burada tüm ayrıntısıyla listelenir.

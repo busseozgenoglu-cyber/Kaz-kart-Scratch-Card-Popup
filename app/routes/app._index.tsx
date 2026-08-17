@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link as RemixLink, useLoaderData } from "@remix-run/react";
+import { Link as RemixLink, useLoaderData, useNavigate } from "@remix-run/react";
 import {
   Badge,
   BlockStack,
@@ -70,6 +70,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function Overview() {
   const data = useLoaderData<typeof loader>();
+  // Gömülü panelde Polaris'in `url` prop'uyla üretilen bağlantılar bazı
+  // durumlarda yönlendiriciye bağlanmıyor ve tıklama sessizce sonuçsuz
+  // kalıyor. Buton aksiyonlarında açık yönlendirme kullanmak bunu ortadan
+  // kaldırıyor.
+  const navigate = useNavigate();
   const { metrics } = data;
   const themeEditorUrl = `https://${data.shopDomain}/admin/themes/current/editor?context=apps`;
 
@@ -164,7 +169,10 @@ export default function Overview() {
                     heading="Henüz gösterim yok"
                     image=""
                     action={{ content: "Tema düzenleyicide aç", url: themeEditorUrl, target: "_blank" }}
-                    secondaryAction={{ content: "Bilet ayarları", url: "/app/settings" }}
+                    secondaryAction={{
+                      content: "Bilet ayarları",
+                      onAction: () => navigate("/app/settings"),
+                    }}
                   >
                     <p>
                       Bileti yayına almak için tema düzenleyicide "Uygulama
